@@ -1,0 +1,18 @@
+# Ignore the generated output reports and dashboards
+output/
+
+#Ignore the Python virtual environment
+venv/
+env/
+
+#Ignore Python compiled cache files
+pycache/
+*.pyc
+*.pyo
+
+#Ignore OS system files (Mac)
+.DS_Store
+
+#Ignore IDE specific folders (VS Code, PyCharm)
+.vscode/
+.idea/

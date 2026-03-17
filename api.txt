@@ -1,0 +1,2 @@
+AIzaSyBKv_RZkj8k7Suv7THsl4k_nfVP31772Uc
+export GEMINI_API_KEY="AIzaSyBKv_RZkj8k7Suv7THsl4k_nfVP31772Uc"

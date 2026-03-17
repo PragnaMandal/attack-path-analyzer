@@ -1,0 +1,69 @@
+{
+  "nodes": [
+    { "id": "internet", "type": "external", "position": { "x": 0, "y": 150 }, "data": { "label": "Internet" } },
+    
+    { "id": "frontend-1", "type": "pod", "position": { "x": 150, "y": 50 }, "data": { "label": "Frontend Pod 1" } },
+    { "id": "frontend-2", "type": "pod", "position": { "x": 150, "y": 150 }, "data": { "label": "Frontend Pod 2" } },
+    { "id": "analytics-dashboard", "type": "pod", "position": { "x": 150, "y": 250 }, "data": { "label": "Analytics Dashboard\n(Vulnerable)" } },
+    { "id": "safe-pod", "type": "pod", "position": { "x": 150, "y": 350 }, "data": { "label": "Isolated Pod" } },
+    
+    { "id": "gateway", "type": "service", "position": { "x": 300, "y": 100 }, "data": { "label": "API Gateway" } },
+    { "id": "safe-service", "type": "service", "position": { "x": 300, "y": 350 }, "data": { "label": "Isolated Service" } },
+    
+    { "id": "orders-service", "type": "service", "position": { "x": 450, "y": 50 }, "data": { "label": "Orders Service" } },
+    { "id": "auth-service", "type": "service", "position": { "x": 450, "y": 150 }, "data": { "label": "Auth Service" } },
+    { "id": "logging-service", "type": "service", "position": { "x": 450, "y": 250 }, "data": { "label": "Logging Service\n(Cycle Loop)" } },
+    
+    { "id": "orders-pod-1", "type": "pod", "position": { "x": 600, "y": 50 }, "data": { "label": "Orders Pod" } },
+    { "id": "auth-pod-1", "type": "pod", "position": { "x": 600, "y": 150 }, "data": { "label": "Auth Pod" } },
+    
+    { "id": "sa-orders", "type": "sa", "position": { "x": 750, "y": 50 }, "data": { "label": "Orders ServiceAccount" } },
+    { "id": "sa-auth", "type": "sa", "position": { "x": 750, "y": 150 }, "data": { "label": "Auth ServiceAccount" } },
+    { "id": "sa-analytics", "type": "sa", "position": { "x": 750, "y": 250 }, "data": { "label": "Analytics ServiceAccount" } },
+    
+    { "id": "role-secrets", "type": "role", "position": { "x": 900, "y": 100 }, "data": { "label": "Read Secrets Role" } },
+    { "id": "role-admin", "type": "role", "position": { "x": 900, "y": 200 }, "data": { "label": "Cluster Admin Role" } },
+    
+    { "id": "db-secret", "type": "secret", "position": { "x": 1050, "y": 100 }, "data": { "label": "DB Credentials" } },
+    { "id": "api-key", "type": "secret", "position": { "x": 1050, "y": 200 }, "data": { "label": "Master API Key" } },
+    
+    { "id": "internal-api", "type": "service", "position": { "x": 1200, "y": 150 }, "data": { "label": "Internal Core API" } },
+    
+    { "id": "postgres", "type": "db", "position": { "x": 1400, "y": 150 }, "data": { "label": "Production DB" } }
+  ],
+  "edges": [
+    { "id": "e1", "source": "internet", "target": "frontend-1", "weight": 1 },
+    { "id": "e2", "source": "internet", "target": "frontend-2", "weight": 1 },
+    { "id": "e3", "source": "internet", "target": "analytics-dashboard", "weight": 2 },
+    { "id": "e4", "source": "internet", "target": "safe-pod", "weight": 1 },
+    
+    { "id": "e5", "source": "frontend-1", "target": "gateway", "weight": 1 },
+    { "id": "e6", "source": "frontend-2", "target": "gateway", "weight": 1 },
+    { "id": "e7", "source": "safe-pod", "target": "safe-service", "weight": 1 },
+    
+    { "id": "e8", "source": "gateway", "target": "orders-service", "weight": 1 },
+    { "id": "e9", "source": "gateway", "target": "auth-service", "weight": 2 },
+    
+    { "id": "e10", "source": "auth-service", "target": "logging-service", "weight": 1 },
+    { "id": "e11", "source": "logging-service", "target": "auth-service", "weight": 1 },
+    
+    { "id": "e12", "source": "orders-service", "target": "orders-pod-1", "weight": 1 },
+    { "id": "e13", "source": "auth-service", "target": "auth-pod-1", "weight": 1 },
+    
+    { "id": "e14", "source": "orders-pod-1", "target": "sa-orders", "weight": 1 },
+    { "id": "e15", "source": "auth-pod-1", "target": "sa-auth", "weight": 2 },
+    { "id": "e16", "source": "analytics-dashboard", "target": "sa-analytics", "weight": 1 },
+    
+    { "id": "e17", "source": "sa-orders", "target": "role-secrets", "weight": 1 },
+    { "id": "e18", "source": "sa-analytics", "target": "role-secrets", "weight": 1 },
+    { "id": "e19", "source": "sa-auth", "target": "role-admin", "weight": 2 },
+    
+    { "id": "e20", "source": "role-secrets", "target": "db-secret", "weight": 2 },
+    { "id": "e21", "source": "role-admin", "target": "api-key", "weight": 3 },
+    
+    { "id": "e22", "source": "db-secret", "target": "internal-api", "weight": 1 },
+    { "id": "e23", "source": "api-key", "target": "internal-api", "weight": 1 },
+    
+    { "id": "e24", "source": "internal-api", "target": "postgres", "weight": 1 }
+  ]
+}
