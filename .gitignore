@@ -19,3 +19,7 @@ pycache/
 
 source/
 api.txt
+data/snapshots/
+cluster-graph.json
+cve_cache.json
+live-cluster-graph.json
