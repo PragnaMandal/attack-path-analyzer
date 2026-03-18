@@ -2,22 +2,27 @@
 
 > *"Security is not about preventing every possible attack — it is about making every attack path visible."*
 
-KubePath is a graph-based security analysis tool for cloud-native infrastructure. It models a Kubernetes cluster as a Directed Graph and applies classical computer science algorithms to surface hidden, exploitable attack chains before an adversary does.
+---
+
+KubePath is a dynamic **Graph-Based Security Posture Management** tool. It ingests a Kubernetes cluster's state, models it as a directed graph, and applies advanced graph theory algorithms to surface hidden multi-hop attack chains — producing an actionable Kill Chain Report before threats are exploited.
+
+Traditional RBAC audits review permissions in isolation. Each individual binding looks benign. The actual threat — privilege escalation via lateral movement across Pods, Service Accounts, Roles, and Secrets — stays invisible until it is exploited. **KubePath makes every attack path visible.**
 
 ---
 
 ## 🏆 Deliverables
 
-| # | Deliverable | Location |
-|---|-------------|----------|
-| ✅ | Working CLI Tool — rich terminal dashboard with AI summary | Terminal output |
-| ✅ | Kill Chain Report — formal PDF with attack path details | `output/Kill_Chain_Report.pdf` |
-| ✅ | JSON Graph Export — fully processed graph with all metadata | `output/cluster-graph-export.json` |
-| ✅ | Algorithm Implementations — BFS, Dijkstra, DFS, Critical Node | `src/graph_engine.py` |
-| ✅ | **Bonus 1** — Interactive HTML/JS Visualizer (Cytoscape.js) | `output/index.html` |
-| ✅ | **Bonus 2** — Live CVE Scoring via NIST NVD API | `src/cve_scorer.py` |
-| ✅ | **Bonus 3** — Temporal Analysis: snapshot diffing & new-path alerting | `src/temporal.py` |
-| ✅ | **Bonus** — AI Executive Summaries via Google Gemini | `src/ai_agent.py` |
+| | Deliverable | File |
+|---|---|---|
+| ✅ | Rich terminal dashboard with AI executive summary | CLI output |
+| ✅ | PDF Kill Chain Report | `output/Kill_Chain_Report.pdf` |
+| ✅ | JSON graph export | `output/cluster-graph-export.json` |
+| ✅ | 4 algorithms: BlastRank · A\* · DFS · Min-Cut | `src/graph_engine.py` |
+| ✅ | **Bonus 1** — Interactive Cytoscape.js dashboard | `output/index.html` |
+| ✅ | **Bonus 2** — Live CVE scoring via NIST NVD API | `src/cve_scorer.py` |
+| ✅ | **Bonus 3 Phase 1** — Temporal graph diffing & alerting | `src/temporal.py` |
+| ✅ | **Bonus 3 Phase 2** — KAN predictive AI (pure NumPy) | `src/kan_predictor.py` |
+| ✅ | **Bonus** — Google Gemini AI executive summary | `src/ai_agent.py` |
 
 ---
 
@@ -27,93 +32,102 @@ KubePath is a graph-based security analysis tool for cloud-native infrastructure
 
 ```bash
 # 1. Clone the repository
-git clone <repo-url>
+git clone https://github.com/PragnaMandal/attack-path-analyzer
 cd kubepath_project
 
-# 2. Create and activate virtual environment
+# 2. Create and activate a virtual environment
 python -m venv venv
-source venv/bin/activate       # Windows: venv\Scripts\activate
+source venv/bin/activate        # Windows: venv\Scripts\activate
 
-# 3. Install dependencies
+# 3. Install all dependencies
 pip install -r requirements.txt
 
 # 4. (Optional) Set API keys
-export GEMINI_API_KEY="your-gemini-key"   # AI executive summaries
-export NVD_API_KEY="your-nvd-key"         # Higher NVD rate limit (50 req/30s vs 5)
+export GEMINI_API_KEY="your-gemini-key"    # enables AI executive summaries
+export NVD_API_KEY="your-nvd-key"          # raises NVD rate limit to 50 req/30s
 ```
 
 ---
 
-## 🚀 Running the Tool
+## 🚀 Running
 
 ```bash
-# Standard run — mock cluster data, mock CVE DB
-python main.py
-
-# Ingest from a live Kubernetes cluster via kubectl
-python main.py --live
-
-# Fetch real CVSS scores from the NIST NVD API (requires internet)
-python main.py --cve
-
-# Auto-open the interactive dashboard in your browser after generation
-python main.py --serve
-
-# Full run — live cluster + live CVE scoring + open browser
-python main.py --live --cve --serve
+python main.py                       # standard run — mock data, offline CVEs
+python main.py --live                # ingest from a live cluster via kubectl
+python main.py --cve                 # fetch live CVSS scores from NIST NVD API
+python main.py --serve               # auto-open HTML dashboard in browser
+python main.py --live --cve --serve  # full run
 ```
 
-### What happens when you run `python main.py`
+### What `python main.py` does step by step
 
 ```
 Loading KubePath Engine...
 ```
-The tool silently:
-1. Ingests cluster data (mock JSON, enriched with namespace / risk scores / CVE annotations)
-2. Scores CVE data from the mock database (or live NVD API with `--cve`)
-3. Builds the NetworkX directed graph
+
+Silently in background:
+- Ingests and enriches cluster graph (mock or live kubectl)
+- Scores CVEs via mock database (or NVD API with `--cve`)
+- Builds NetworkX DiGraph with full node/edge metadata
+- Runs all four algorithms
 
 Then the **rich terminal dashboard** appears:
 
 ```
-╔══════════════════════════════════════╗
-║   KubePath Advanced Security Dashboard ║
-╚══════════════════════════════════════╝
+╔══════════════════════════════════════════════╗
+║   KubePath  ·  Advanced Security Dashboard   ║
+╚══════════════════════════════════════════════╝
 
-┌─ AI Executive Summary (Gemini) ────────────────────────────────┐
-│  Critical vulnerability detected bridging public endpoints...   │
-└─────────────────────────────────────────────────────────────────┘
+┌─ AI Executive Summary (Gemini) ──────────────────────────────────┐
+│  A critical vulnerability chain connects the public internet to  │
+│  the production database via exploitable RBAC misconfigurations. │
+│  Patching role-secrets eliminates 5 of 6 attack paths...        │
+└──────────────────────────────────────────────────────────────────┘
 
-Critical Attack Path Detected: internet → postgres
- Hop  Entity Node ID         Display Name            Type
-  0   internet               Internet                EXTERNAL
-  1   frontend-1             Frontend Pod 1          POD
-  2   gateway                API Gateway             SERVICE
-  ...
+  ⚔  A* Attack Path Detected: internet → postgres
+  Hop  Node ID               Display Name          Type      CVE              CVSS
+   0   internet              Internet              EXTERNAL  CVE-1999-0280    7.5
+   1   analytics-dashboard   Analytics Dashboard   POD       CVE-2023-46604   9.8
+   2   sa-analytics          Analytics SA          SA        —                —
+   3   role-secrets          Read Secrets Role     ROLE      —                —
+   4   db-secret             DB Credentials        SECRET    —                —
+   5   internal-api          Internal Core API     SERVICE   CVE-2018-5256    7.5
+   6   postgres              Production DB         DB        —                —
 
-  Total Resistance Weight: 9  |  Total Hops: 6
+  Algorithm: A* + Privilege Proximity Heuristic | Risk Score: 8.0 | Hops: 6
 
-┌─ Graph Analytics ──────────────────────────────────────────────┐
-│  ✓ Blast Radius (internet): 14 nodes compromised within 3 hops │
-│  ✓ DFS Cycle Detection: 1 privilege loops found                │
-│    (auth-service ↔ logging-service)                            │
-└─────────────────────────────────────────────────────────────────┘
+┌─ Graph Analytics ────────────────────────────────────────────────┐
+│  ✓ BlastRank Blast Radius (frontend-1): 14 nodes within 3 hops  │
+│  ✓ Algorithm: BFS ego-graph + Eigenvector Centrality (Markov)   │
+│  → Top: auth-service(1.000) logging-service(1.000) sa-auth(0.87)│
+│  ✓ DFS Cycle Detection: 1 loop — auth-service ↔ logging-service │
+└──────────────────────────────────────────────────────────────────┘
 
-┌─ Recommended Remediation (Task 4) ─────────────────────────────┐
-│  Choke point: role-secrets                                      │
-│  Removing this node breaks 5 active attack paths.              │
-└─────────────────────────────────────────────────────────────────┘
-```
+┌─ Recommended Remediation — Critical Node (Min-Cut) ──────────────┐
+│  Algorithm: Min-Cut / Max-Flow (Ford-Fulkerson node-split)       │
+│  Choke point: role-secrets                                        │
+│  Removing this node breaks 5 active attack paths.               │
+└──────────────────────────────────────────────────────────────────┘
 
-Finally:
-```
+──────────────────────────────────────────────────────────────────
+  KAN Predictive Analysis (Phase 2)
+──────────────────────────────────────────────────────────────────
+🔴 HIGH RISK — KAN predicts a NEW attack path will appear
+  Prediction probability: 78.3%
+  Top contributing features:
+    · path_risk=9.0    [↑ pushing risk up, contribution=+0.421]
+    · edge_count=26    [↑ pushing risk up, contribution=+0.187]
+    · cycle_count=1    [↑ pushing risk up, contribution=+0.093]
+
 [✔] DELIVERABLES GENERATED:
- ├── PDF Kill Chain Report : /path/to/output/Kill_Chain_Report.pdf
- ├── JSON Graph Export     : /path/to/output/cluster-graph-export.json
- ├── Interactive Dashboard : /path/to/output/index.html
- ├── Temporal Snapshots    : /path/to/data/snapshots/
- └── CVE Cache             : /path/to/data/cve_cache.json
+ ├── PDF Kill Chain Report : .../output/Kill_Chain_Report.pdf
+ ├── JSON Graph Export     : .../output/cluster-graph-export.json
+ ├── Interactive Dashboard : .../output/index.html
+ ├── Temporal Snapshots    : .../data/snapshots/
+ └── CVE Cache             : .../data/cve_cache.json
 ```
+
+> **Note:** KAN prediction requires ≥ 3 runs of `python main.py` to build enough snapshot history to train on. It will inform you how many more runs are needed.
 
 ---
 
@@ -121,27 +135,28 @@ Finally:
 
 ```
 kubepath_project/
-├── main.py                    # Entry point
+├── main.py                        # entry point
 ├── requirements.txt
 ├── data/
-│   ├── mock-cluster-graph.json    # Sample 21-node cluster dataset
-│   ├── cluster-graph.json         # Enriched graph (generated on run)
-│   ├── cve_cache.json             # Cached NVD API results
-│   └── snapshots/                 # Temporal analysis snapshots
+│   ├── mock-cluster-graph.json    # 21-node synthetic dataset
+│   ├── cluster-graph.json         # enriched graph (generated at runtime)
+│   ├── cve_cache.json             # cached NVD API results
+│   ├── kan_model.json             # saved KAN spline coefficients
+│   └── snapshots/
 │       └── snapshot_YYYYMMDD_HHMMSS.json
 ├── output/
-│   ├── Kill_Chain_Report.pdf      # PDF kill chain report
-│   ├── cluster-graph-export.json  # Full graph JSON export
-│   └── index.html                 # Interactive Cytoscape.js dashboard
+│   ├── Kill_Chain_Report.pdf
+│   ├── cluster-graph-export.json
+│   └── index.html
 └── src/
-    ├── __init__.py
     ├── ingester.py        # Task 1  — kubectl ingestion + mock enrichment
-    ├── graph_engine.py    # Task 2  — NetworkX graph + all algorithms
-    ├── reporter.py        # Task 3  — Rich CLI dashboard
+    ├── graph_engine.py    # Task 2  — graph construction + all 4 algorithms
+    ├── reporter.py        # Task 3  — rich terminal dashboard
     ├── pdf_generator.py   # Task 3  — PDF kill chain report
-    ├── visualizer.py      # Bonus 1 — Interactive HTML dashboard
+    ├── visualizer.py      # Bonus 1 — interactive Cytoscape.js dashboard
     ├── cve_scorer.py      # Bonus 2 — NIST NVD API CVE scoring
-    ├── temporal.py        # Bonus 3 — Snapshot storage & graph diffing
+    ├── temporal.py        # Bonus 3 Phase 1 — snapshot diffing & alerting
+    ├── kan_predictor.py   # Bonus 3 Phase 2 — KAN predictive AI
     └── ai_agent.py        # Bonus   — Gemini AI executive summaries
 ```
 
@@ -153,17 +168,16 @@ kubepath_project/
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `id` | string | Unique identifier (e.g., `frontend-1`) |
-| `type` | string | Entity kind: `pod`, `service`, `db`, `external`, `role`, `sa`, `secret`, `configmap` |
+| `id` | string | Unique identifier (e.g. `frontend-1`) |
+| `type` | string | `pod` · `service` · `db` · `external` · `role` · `sa` · `secret` · `configmap` |
 | `label` | string | Human-readable display name |
-| `namespace` | string | Kubernetes namespace (e.g., `default`, `data`, `cluster-wide`) |
-| `risk_score` | float | Composite risk score 0.0–10.0 (base type risk + CVE severity) |
-| `cve` | string | Known vulnerability ID (e.g., `CVE-2023-44487`) |
-| `cvss` | float | CVSS base score 0.0–10.0, fetched from NIST NVD |
-| `cve_desc` | string | Short vulnerability description |
-| `labels` | object | Kubernetes labels map |
-| `is_public` | bool | True for external ingress points (attack entry nodes) |
-| `is_crown_jewel` | bool | True for critical targets (databases, admin roles) |
+| `namespace` | string | Kubernetes namespace |
+| `risk_score` | float | Composite 0.0–10.0 (base type risk + CVE contribution) |
+| `cve` | string | Vulnerability ID (e.g. `CVE-2023-44487`) |
+| `cvss` | float | CVSS base score 0.0–10.0 from NIST NVD |
+| `cve_desc` | string | Short description of the vulnerability |
+| `is_public` | bool | `true` for external ingress/attack entry nodes |
+| `is_crown_jewel` | bool | `true` for production databases and admin roles |
 
 ### Edge Fields
 
@@ -171,141 +185,249 @@ kubepath_project/
 |-------|------|-------------|
 | `source` | string | Origin node ID |
 | `target` | string | Destination node ID |
-| `relationship` | string | Trust relationship type (e.g., `uses_service_account`, `bound_to_role`, `grants_access`) |
-| `weight` | int | Exploitability score — lower = easier to traverse for an attacker |
+| `relationship` | string | `uses_service_account` · `bound_to_role` · `grants_access` · `calls_service` · etc. |
+| `weight` | int | Exploitability score — lower = easier to traverse |
 
 ---
 
 ## 🧠 Algorithms
 
-### Algorithm 1 — Blast Radius Detection (BFS)
-**Purpose:** If a pod is compromised today, how far can an attacker reach?
+### 1. BlastRank — BFS + Markov Chain (Eigenvector Centrality)
 
-Uses `networkx.ego_graph` to run Breadth-First Search up to `N` hops (default: 3) from a source node. Returns the full set of reachable nodes — the *Danger Zone* — enabling rapid incident response scoping.
+**File:** `src/graph_engine.py` → `get_blast_radius()`
 
-```
-BFS Blast Radius of 'frontend-1': 14 nodes within 3 hops
-```
+**The problem with plain BFS:** counts hops and treats every node equally. A dead-end pod 2 hops away looks as dangerous as the central auth service 2 hops away.
 
-### Algorithm 2 — Shortest Attack Path (Dijkstra's Algorithm)
-**Purpose:** What is the easiest route from the internet to the Production Database?
+**Our approach:**
+1. BFS `ego_graph` identifies the N-hop danger zone (same as before)
+2. **Eigenvector Centrality** runs on that subgraph — mathematically equivalent to the **PageRank stationary distribution** of a Markov Chain. An APT randomly walking trust links will spend time proportional to each node's BlastRank score.
 
-Runs Dijkstra's shortest-path algorithm on edge weights (exploitability scores). Lower weight = less resistance = higher attacker priority. Returns the minimum-cost path and total risk score.
+**Result:** Nodes are ranked by *influence*, not just distance. `auth-service` scores 1.000 because every path flows through it. A dead-end pod scores 0.000.
 
 ```
-internet → frontend-1 → gateway → auth-service → sa-auth → role-admin → api-key → internal-api → postgres
-Total Hops: 8  |  Path Risk Score: 9.0
-```
-
-### Algorithm 3 — Circular Permission Detection (DFS)
-**Purpose:** Detect misconfigured mutual admin grants that amplify every attack path.
-
-Custom recursive DFS tracking `visited` and `rec_stack` sets to detect back-edges (cycles). Deduplicates cycles by canonical sorted signature. Finds privilege escalation loops like `auth-service ↔ logging-service`.
-
-```
-✓ Cycles Detected: 1 (auth-service ↔ logging-service mutual admin grant)
-```
-
-### Task 4 — Critical Node Identification
-**Purpose:** Find the single fix that eliminates the most attack paths.
-
-For each intermediate node on any source→target path, temporarily removes it and recounts valid paths. The node causing the greatest reduction is the critical choke point.
-
-```
-Recommendation: Remove 'role-secrets' to eliminate 5 of 6 attack paths.
+Returns: (blast_nodes: list, blast_ranks: dict{node: score})
 ```
 
 ---
 
-## 🌐 Interactive Dashboard (Bonus 1)
+### 2. A\* Search with Privilege Proximity Heuristic h(n)
+
+**File:** `src/graph_engine.py` → `get_shortest_path()`
+
+**The problem with Dijkstra:** searches blindly in all directions — equivalent to a script-kiddie scanner. It has no concept of which nodes are interesting to an attacker.
+
+**Our approach:** Custom A\* with heuristic:
+
+```
+h(n) = hop_distance_to_target × 0.2
+       − privilege_rank(type) × 0.3
+       − cvss_score × 0.15
+```
+
+Lower `h(n)` = node is closer to a crown jewel in privilege space. The search is steered toward high-privilege nodes (roles, secrets, databases) before exploring low-value pods and configmaps. Simulates an **APT that knows what it is hunting**.
+
+**Privilege rank:** `db=10, secret=9, clusterrole=8, role=7, sa=6, service=4, pod=3, external=1`
+
+```
+Returns: (path: list, cost: float, hops: int)
+```
+
+On the mock cluster, A\* found a **different path than Dijkstra** — one that goes through the analytics pod (CVSS 9.8) rather than the higher-weight frontend path, because the heuristic correctly identifies the analytics→sa→role→secret chain as the path of least privilege resistance.
+
+---
+
+### 3. DFS Circular Permission Detection
+
+**File:** `src/graph_engine.py` → `get_cycles()`
+
+Explicit recursive DFS maintaining a `visited` set and a `rec_stack` (nodes currently on the active DFS path). A back-edge — neighbour already in `rec_stack` — proves a cycle exists. Deduplicates by canonical sorted signature so `A→B→A` is not reported twice as `A↔B` and `B↔A`.
+
+**Security value:** Privilege escalation loops like `auth-service ↔ logging-service` mean any compromise in the loop grants access to both — amplifying every attack path that touches either node.
+
+```
+Returns: list of cycles, each cycle is a list of node IDs
+```
+
+---
+
+### 4. Critical Node — Min-Cut / Max-Flow (Ford-Fulkerson)
+
+**File:** `src/graph_engine.py` → `get_critical_node()`
+
+**The problem with brute-force:** remove each node, recount paths, restore — O(V × P). For enterprise clusters with thousands of nodes and paths this is completely intractable.
+
+**Our approach — node-split flow network:**
+
+1. Each real node `v` is split into `v_IN` and `v_OUT` with an internal edge of **capacity 1** (meaning at most one unit of attack flow can pass through each node)
+2. Edges between nodes get **capacity ∞** (connections between nodes are free)
+3. **Ford-Fulkerson Max-Flow** runs from `source_IN` to `target_OUT`
+4. By the **Min-Cut / Max-Flow theorem**, saturated internal edges (`flow = capacity = 1`) identify exactly the nodes whose removal disconnects the source from the target — these are the choke points
+
+The node with the highest flow through its internal edge is the critical node. One flow computation replaces V graph reconstructions.
+
+```
+Returns: (critical_node_id: str, paths_broken: int)
+Falls back to brute-force for disconnected graphs where flow fails.
+```
+
+---
+
+## ⏱️ Temporal Analysis — Bonus 3
+
+### Phase 1 — Deterministic Graph Diffing ✅
+
+**File:** `src/temporal.py`
+
+After every `python main.py` run, a JSON snapshot is saved to `data/snapshots/`. The diff engine compares consecutive snapshots and alerts on:
+- New attack paths that appeared
+- Paths that were remediated
+- New privilege loops
+- Risk score delta
+- Critical node changes
+
+```bash
+python -m src.temporal --list    # list all snapshots
+python -m src.temporal --diff    # diff the two most recent scans
+python -m src.temporal --clear   # delete all snapshots
+```
+
+Sample alert:
+```
+⚠  2 NEW attack path(s) detected!
+  + internet→frontend-2→gateway→orders-service→...→postgres
+
+Risk: 9.0 → 18.0  (+9.0)
+🔴 ACTION REQUIRED — new attack vectors have appeared.
+```
+
+### Phase 2 — KAN Predictive AI ✅
+
+**File:** `src/kan_predictor.py`
+
+**Why not an MLP?**
+
+| | MLP | KAN |
+|---|---|---|
+| Activations | Fixed (ReLU/sigmoid) on **nodes** | Learnable **B-splines** on **edges** |
+| Weights | Scalar multipliers | Full spline functions φ(x) |
+| Interpretable | ❌ Black box | ✅ Every edge function is readable |
+| Explanation | "Weight=0.73" | "path_risk>7 → steep risk increase" |
+
+**Architecture:** 7 → 4 → 1 (two KAN layers, 32 spline functions total)
+
+**Input features** (extracted from each snapshot):
+
+| Feature | Description |
+|---------|-------------|
+| `node_count` | Total nodes in the graph |
+| `edge_count` | Total edges |
+| `path_count` | Number of active attack paths |
+| `path_risk` | A\* shortest path risk score |
+| `cycle_count` | Number of circular permission loops |
+| `critical_node_rank` | Privilege rank of the current choke point |
+| `risk_delta` | Change in path risk since last scan |
+
+**Output:** Probability that the **next scan** will contain a new attack path.
+
+**How it works:**
+- Each edge in the KAN carries a learnable B-spline `φ(x)` computed via the Cox-de Boor recursion formula
+- Trained with numerical gradient descent (finite differences) — zero framework dependency, pure NumPy
+- After training, each spline can be directly inspected: *"edge path_risk→hidden_0 steepens sharply at values above 7.0"*
+- Model saved to `data/kan_model.json` and reloaded on subsequent runs
+
+```bash
+python -m src.kan_predictor              # train + predict
+python -m src.kan_predictor --explain    # show all 32 learned spline functions
+```
+
+> **Note:** Requires ≥ 3 runs of `python main.py` to build training history.
+
+---
+
+## 🌐 Interactive Dashboard — Bonus 1
 
 Open `output/index.html` in any browser. No server required.
 
-| Button | Algorithm | What it shows |
-|--------|-----------|---------------|
-| ☢ **Blast Radius** | BFS | Amber nodes — all nodes reachable within 3 hops of the compromised pod |
-| ⚔ **Attack Path** | Dijkstra | Red path — the minimum-resistance route to the Crown Jewel database |
-| 🔄 **Circular Perms** | DFS | Purple nodes/edges — circular permission loops |
-| 📊 **Risk Score** | Composite | Live risk meter: 0–100% based on entity types, density, and active kill chain |
-| ✓ **Simulate Patch** | Critical Node | Greys out the choke point; re-run Attack Path to confirm the kill chain is broken |
+| Button | Algorithm | Shows |
+|--------|-----------|-------|
+| ☢ Blast Radius | BlastRank (BFS + Eigenvector) | Amber nodes — danger zone, sized by BlastRank score |
+| ⚔ Attack Path | A\* + Privilege Proximity | Red path — minimum-resistance route to the Crown Jewel |
+| 🔄 Circular Perms | DFS cycle detection | Purple nodes/edges — privilege escalation loops |
+| 📊 Risk Score | Composite scoring | Live meter 0–100% with entity type breakdown |
+| ✓ Simulate Patch | Min-Cut choke point | Greys out critical node; re-run Attack Path to confirm kill chain broken |
 
-**Two graph views** (toggle top-right):
-- **Force** — original left-to-right attack chain layout
-- **Clusters** — nodes grouped into type bubbles (Pods, Services, Secrets, etc.)
-
-Node shapes indicate type: ◆ diamond = external, ● circle = pod, ▭ rectangle = service, ⬡ octagon = ServiceAccount, ⬠ pentagon = role, ★ star = secret, ▣ barrel = database.
+**Two graph views** (toggle top-right corner):
+- **Force** — original left-to-right kill chain flow layout
+- **Clusters** — nodes grouped into type bubbles (Pods · Services · Secrets · Roles · etc.)
 
 ---
 
-## 🔍 Live CVE Scoring (Bonus 2)
+## 🔍 Live CVE Scoring — Bonus 2
 
-`src/cve_scorer.py` queries the [NIST NVD API v2](https://nvd.nist.gov/developers/vulnerabilities) to auto-assign real CVSS scores to cluster nodes based on their container image name.
+**File:** `src/cve_scorer.py`
+
+Queries the [NIST NVD API v2](https://nvd.nist.gov/developers/vulnerabilities) to assign real CVSS scores to nodes based on container image names. Scores feed directly into the A\* heuristic so that more vulnerable nodes are preferentially explored as attack routes.
 
 ```bash
-# Run standalone CVE lookup
-python -m src.cve_scorer nginx postgres redis
+python -m src.cve_scorer nginx postgres redis kafka
 ```
 
-Results are cached in `data/cve_cache.json` to avoid redundant API calls on repeated runs. Set `NVD_API_KEY` in your environment to raise the rate limit from 5 to 50 requests per 30 seconds.
+Results cached in `data/cve_cache.json`. Set `NVD_API_KEY` to increase rate limit from 5 to 50 requests per 30 seconds. Falls back to a built-in mock CVE database when the API is unavailable.
 
 ---
 
-## ⏱️ Temporal Analysis (Bonus 3)
+## 🤖 AI Executive Summary — Bonus
 
-`src/temporal.py` stores a JSON snapshot of the graph state after every run and diffs consecutive scans to detect security regressions.
+**File:** `src/ai_agent.py`
 
-```bash
-# List all stored snapshots
-python -m src.temporal --list
-
-# Diff the two most recent snapshots
-python -m src.temporal --diff
-
-# Clear all snapshots
-python -m src.temporal --clear
-```
-
-**Sample diff output:**
-```
-──────────────────────────────────────────────────
-  KubePath — Temporal Diff Report
-──────────────────────────────────────────────────
-  Old scan : 2024-01-15T10:00:00Z
-  New scan : 2024-01-15T11:30:00Z
-
-  ATTACK PATH CHANGES
-  ⚠  2 NEW attack path(s) detected!
-
-    + internet→frontend-2→gateway→orders-service→...→postgres
-    + internet→analytics-dashboard→sa-analytics→...→postgres
-
-  RISK SCORE
-  Path risk: 9.0 → 18.0  (+9.0)
-
-  🔴 ACTION REQUIRED — new attack vectors have appeared.
-```
+When `GEMINI_API_KEY` is set, Google Gemini generates a 3-sentence board-level executive summary of the most critical attack path and recommended remediation — displayed at the top of the dashboard for CISO-facing reporting.
 
 ---
 
-## 🤖 AI Executive Summary
+## 🏗️ Technical Architecture
 
-When `GEMINI_API_KEY` is set, KubePath calls Google Gemini to generate a 3-sentence board-level executive summary of the most critical attack path and the recommended remediation — displayed at the top of the CLI dashboard.
+| Layer | Technology |
+|-------|-----------|
+| **Frontend** | HTML5 · Cytoscape.js |
+| **Backend** | Python 3.8+ |
+| **Graph Engine** | NetworkX (in-memory DiGraph) |
+| **AI / ML** | Google Gemini (summarisation) · KAN in NumPy (prediction) |
+| **APIs** | Kubernetes API (kubectl) · NIST NVD API |
+| **Libraries** | NetworkX · Rich · ReportLab · Requests · NumPy |
 
-If the key is not set, a static fallback summary is used automatically.
+---
+
+## 📈 Algorithm Complexity
+
+| Algorithm | Complexity | Notes |
+|-----------|-----------|-------|
+| BlastRank BFS | O(V + E) | Linear; eigenvector centrality O(V²) on subgraph only |
+| A\* Attack Path | O(E log V) | Sub-linear with Privilege Proximity heuristic |
+| DFS Cycle Detection | O(V + E) | Linear — full graph traversal |
+| Min-Cut Critical Node | O(VE²) | Polynomial — tractable for enterprise graphs |
+| KAN Training | O(epochs × 32 × 2ε) | Fixed architecture; fast on small snapshot history |
 
 ---
 
 ## 📦 Dependencies
 
 ```
-networkx==3.2.1      # Graph construction and algorithms
-rich==13.7.0         # Terminal dashboard formatting
-requests==2.31.0     # NIST NVD API calls
-reportlab==4.0.9     # PDF kill chain report generation
+networkx==3.2.1           # graph construction and all 4 algorithms
+rich==13.7.0              # terminal dashboard formatting
+requests==2.31.0          # NIST NVD API calls
+reportlab==4.0.9          # PDF kill chain report generation
 google-generativeai==0.4.0  # Gemini AI executive summaries
+numpy>=1.24.0             # KAN predictor — B-spline basis, matrix ops
 ```
 
-Install with:
 ```bash
 pip install -r requirements.txt
 ```
+
+---
+
+## 👥 Who Benefits
+
+**DevSecOps Teams & CISOs** — eliminates blind spots in cloud-native infrastructure, saving hundreds of hours of manual RBAC auditing and spreadsheet review.
+
+**Real-world impact** — traditional tools catch single misconfigurations. KubePath catches *chained* exploits before they happen. Finding the Min-Cut choke point means fixing **one RoleBinding** can eliminate **80% of cluster risk**.

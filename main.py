@@ -3,26 +3,19 @@ KubePath — main.py
 ===================
 Simply run:   python main.py
 
-What happens:
-  1. Ingests cluster data (mock by default, live with --live)
-  2. Scores CVE data silently from mock DB (use --cve for live NVD API)
-  3. Builds the NetworkX graph
-  4. Runs BFS, Dijkstra, DFS, Critical Node algorithms
-  5. Calls Gemini AI for executive summary
-  6. Prints the full rich CLI dashboard (original look)
-  7. Generates PDF Kill Chain Report
-  8. Generates Interactive HTML Dashboard
-  9. Saves a temporal snapshot + diffs against the previous run
- 10. Prints the file paths of all deliverables
+Algorithms used:
+  1. BlastRank  — BFS + Eigenvector Centrality (Markov Chain model)
+  2. A* Search  — Dijkstra base + Privilege Proximity heuristic h(n)
+  3. DFS        — Explicit cycle detection with rec_stack
+  4. Min-Cut    — Max-Flow (Ford-Fulkerson) critical node identification
 
 Flags:
-    --live       Ingest from live kubectl cluster instead of mock
-    --cve        Fetch real CVSS scores from the NIST NVD API (slow, needs internet)
-    --serve      Auto-open the HTML dashboard in your browser
+    --live    Ingest from live kubectl cluster instead of mock
+    --cve     Fetch real CVSS scores from NIST NVD API (requires internet)
+    --serve   Auto-open the HTML dashboard in your browser
 """
 
 import os
-import sys
 import json
 import argparse
 import warnings
@@ -51,7 +44,10 @@ def main():
     os.makedirs("data",   exist_ok=True)
     os.makedirs("output", exist_ok=True)
 
-    graph_path = "data/cluster-graph.json"
+    graph_path      = "data/cluster-graph.json"
+    source_node     = "internet"
+    target_node     = "postgres"
+    compromised_pod = "frontend-1"
 
     # ── 1. DATA INGESTION (Task 1) ────────────────────────────────────────────
     print("Loading KubePath Engine...")
@@ -68,61 +64,73 @@ def main():
         json.dump(raw_data, f, indent=2)
 
     # ── 2. CVE SCORING (Bonus 2) ──────────────────────────────────────────────
-    # Silent by default (mock DB). Pass --cve to hit the NIST NVD API.
     scorer = CVEScorer(use_api=args.cve, cache=True)
     raw_data["nodes"] = scorer.score_all_nodes(raw_data["nodes"])
     with open(graph_path, "w") as f:
         json.dump(raw_data, f, indent=2)
 
-    # ── 3. GRAPH CONSTRUCTION (Task 2) ───────────────────────────────────────
-    engine = KubeGraphEngine(graph_path)
+    # ── 3. GRAPH CONSTRUCTION (Task 2) ────────────────────────────────────────
+    engine   = KubeGraphEngine(graph_path)
     reporter = CLIReport()
-    ai = SecurityAI()
+    ai       = SecurityAI()
 
-    source_node     = "internet"
-    target_node     = "postgres"
-    compromised_pod = "frontend-1"
+    # ── 4. ALGORITHM 1: BlastRank (BFS + Eigenvector Centrality) ─────────────
+    blast_nodes, blast_ranks = engine.get_blast_radius(compromised_pod, hops=3)
 
-    # ── 4. ALGORITHMS (Tasks 3 & 4) ──────────────────────────────────────────
-    blast_radius             = engine.get_blast_radius(compromised_pod, hops=3)
-    path, path_risk          = engine.get_shortest_path(source_node, target_node)
-    cycles                   = engine.get_cycles()
+    # ── 5. ALGORITHM 2: A* Search (Privilege Proximity Heuristic) ────────────
+    path, path_risk, hops = engine.get_shortest_path(source_node, target_node)
+
+    # ── 6. ALGORITHM 3: DFS Cycle Detection ──────────────────────────────────
+    cycles = engine.get_cycles()
+
+    # ── 7. ALGORITHM 4: Min-Cut Critical Node (Ford-Fulkerson) ───────────────
     critical_node, reduction = engine.get_critical_node(source_node, target_node)
 
     if not path:
         print("\n[✔] No attack path found from public nodes to Crown Jewels.")
         return
 
-    # ── 5. AI SUMMARY ────────────────────────────────────────────────────────
+    # ── 8. AI EXECUTIVE SUMMARY ───────────────────────────────────────────────
     ai_summary = ai.generate_executive_summary(
         path, path_risk, critical_node, reduction
     )
 
-    # ── 6. RICH CLI DASHBOARD (Task 3) — original look ───────────────────────
+    # ── 9. RICH CLI DASHBOARD (Task 3) ────────────────────────────────────────
     reporter.print_dashboard(
-        G=engine.G, source=source_node, target=target_node,
-        path=path, path_risk=path_risk,
-        blast_radius=blast_radius, cycles=cycles,
-        critical_node=critical_node, reduction=reduction,
+        G=engine.G,
+        source=source_node,
+        target=target_node,
+        path=path,
+        path_risk=path_risk,
+        blast_nodes=blast_nodes,
+        blast_ranks=blast_ranks,
+        cycles=cycles,
+        critical_node=critical_node,
+        reduction=reduction,
         ai_summary=ai_summary,
     )
 
-    # ── 7. PDF KILL CHAIN REPORT (Task 3) ────────────────────────────────────
+    # ── 10. PDF KILL CHAIN REPORT (Task 3) ───────────────────────────────────
     pdf_path = PDFReport.generate(
-        G=engine.G, source=source_node, target=target_node,
-        path=path, path_risk=path_risk,
-        blast_radius=blast_radius, cycles=cycles,
-        critical_node=critical_node, reduction=reduction,
+        G=engine.G,
+        source=source_node,
+        target=target_node,
+        path=path,
+        path_risk=path_risk,
+        blast_radius=blast_nodes,
+        cycles=cycles,
+        critical_node=critical_node,
+        reduction=reduction,
     )
 
-    # ── 8. JSON EXPORT (Task 2) ───────────────────────────────────────────────
+    # ── 11. JSON EXPORT (Task 2) ──────────────────────────────────────────────
     json_export = engine.export_to_json("output/cluster-graph-export.json")
 
-    # ── 9. INTERACTIVE DASHBOARD (Bonus 1) ───────────────────────────────────
+    # ── 12. INTERACTIVE DASHBOARD (Bonus 1) ───────────────────────────────────
     html_path = GraphVisualizer.generate_html(
         G=engine.G,
         critical_path=path,
-        blast_radius=blast_radius,
+        blast_radius=blast_nodes,
         critical_node=critical_node,
         reduction=reduction,
         cycles=cycles,
@@ -131,12 +139,23 @@ def main():
         target_node=target_node,
     )
 
-    # ── 10. TEMPORAL SNAPSHOT + DIFF (Bonus 3) ───────────────────────────────
+    # ── 13. TEMPORAL SNAPSHOT + DIFF (Bonus 3 Phase 1) ──────────────────────
     temporal = TemporalAnalyzer(source=source_node, target=target_node)
     temporal.save_snapshot(engine)
     diff = temporal.diff_latest()
     if diff and not diff.get("is_unchanged"):
         temporal.print_diff_report(diff)
+
+    # ── 14. KAN PREDICTION (Bonus 3 Phase 2) ─────────────────────────────────
+    kan_prob, kan_explanation = temporal.predict_next()
+    if kan_prob is not None:
+        print("\n" + "─" * 60)
+        print("  KAN Predictive Analysis (Phase 2)")
+        print("─" * 60)
+        print(kan_explanation)
+    else:
+        if kan_explanation:
+            print(f"\n[KAN] {kan_explanation}")
 
     # ── DELIVERABLES SUMMARY ──────────────────────────────────────────────────
     print("\n[✔] DELIVERABLES GENERATED:")

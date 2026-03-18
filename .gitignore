@@ -20,6 +20,7 @@ pycache/
 source/
 api.txt
 data/snapshots/
-cluster-graph.json
-cve_cache.json
-live-cluster-graph.json
+data/cluster-graph.json
+data/cve_cache.json
+data/live-cluster-graph.json
+data/kan_model.json

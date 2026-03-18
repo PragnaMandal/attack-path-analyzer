@@ -26,6 +26,31 @@ import hashlib
 import argparse
 from datetime import datetime
 
+# KAN predictor — try multiple import paths to handle
+# both `python main.py` (src.kan_predictor) and
+# `python -m src.temporal` (.kan_predictor) contexts.
+import numpy as _np_check   # numpy must exist before KAN is useful
+_KAN_AVAILABLE = False
+_KANPredictor  = None
+try:
+    from src.kan_predictor import KANPredictor as _KANPredictor
+    _KAN_AVAILABLE = True
+except ImportError:
+    try:
+        from kan_predictor import KANPredictor as _KANPredictor
+        _KAN_AVAILABLE = True
+    except ImportError:
+        try:
+            import importlib, os, sys
+            _this_dir = os.path.dirname(os.path.abspath(__file__))
+            if _this_dir not in sys.path:
+                sys.path.insert(0, _this_dir)
+            _mod = importlib.import_module("kan_predictor")
+            _KANPredictor = _mod.KANPredictor
+            _KAN_AVAILABLE = True
+        except Exception:
+            pass
+
 
 SNAPSHOT_DIR = "data/snapshots"
 
@@ -71,7 +96,7 @@ class TemporalAnalyzer:
         # Represent each path as a stable string signature
         path_sigs = sorted(["→".join(p) for p in all_paths])
 
-        shortest_path, path_risk = engine.get_shortest_path(self.source, self.target)
+        shortest_path, path_risk, _ = engine.get_shortest_path(self.source, self.target)
         cycles      = engine.get_cycles()
         crit_node, reduction = engine.get_critical_node(self.source, self.target)
 
@@ -247,6 +272,34 @@ class TemporalAnalyzer:
         else:
             print("  🟢 No new attack paths. Security posture maintained or improved.")
         print()
+
+    # ── KAN PREDICTION ───────────────────────────────────────────────────────
+    def predict_next(self) -> tuple:
+        """
+        Phase 2: Use the trained KAN to predict whether the next scan
+        will contain a new attack path.
+
+        Returns (probability, explanation_string).
+        If not enough snapshots exist to train, returns (None, message).
+        """
+        if not _KAN_AVAILABLE:
+            return None, "[KAN] Could not load KAN module. Ensure kan_predictor.py is in the src/ folder."
+
+        snaps = self.list_snapshots()
+        if len(snaps) < 3:
+            return None, (
+                f"[KAN] Need ≥ 3 snapshots to train (have {len(snaps)}). "
+                f"Run python main.py more times to build history."
+            )
+
+        predictor = _KANPredictor()
+        trained   = predictor.fit(self.snapshot_dir)
+        if not trained:
+            return None, "[KAN] Training failed — not enough data."
+
+        latest = self.load_snapshot(snaps[-1])
+        prev   = self.load_snapshot(snaps[-2]) if len(snaps) >= 2 else None
+        return predictor.predict(latest, prev)
 
     # ── CLEANUP ───────────────────────────────────────────────────────────────
     def clear_snapshots(self):

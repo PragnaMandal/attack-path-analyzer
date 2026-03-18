@@ -1,5 +1,17 @@
+# Core graph engine
 networkx==3.2.1
+
+# Terminal dashboard
 rich==13.7.0
+
+# HTTP requests (NIST NVD API, CVE scoring)
 requests==2.31.0
+
+# PDF kill chain report generation
 reportlab==4.0.9
+
+# Google Gemini AI executive summaries
 google-generativeai==0.4.0
+
+# KAN predictor (Bonus 3 Phase 2) — Kolmogorov-Arnold Network
+numpy>=1.24.0
