@@ -86,3 +86,9 @@ Score. A lower weight indicates a path of lesser resistance for an attacker.
     of back-edges (privilege escalation loops).
 4. **Critical Node Simulation:** Iteratively drops nodes that exist on valid attack paths,
     recounting the total available paths to identify the single "choke point" remediation target.
+
+## Screenshots
+<img width="1468" height="831" alt="image" src="https://github.com/user-attachments/assets/c0b6ee8a-1808-4647-96cf-3eb0d5f3a255" />
+<img width="1469" height="832" alt="image" src="https://github.com/user-attachments/assets/94b1130f-be40-4d93-9c5a-0dd41582c897" />
+<img width="1470" height="830" alt="image" src="https://github.com/user-attachments/assets/5fb35835-b0b3-4553-8745-e4c661c448ce" />
+<img width="1470" height="838" alt="image" src="https://github.com/user-attachments/assets/f6185fb8-08e6-4c48-a19f-3f8c34d71aad" />
