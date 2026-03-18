@@ -12,9 +12,11 @@ Kill Chain Report: Automatically exported as a formal PDF
 (output/Kill_Chain_Report.pdf).
 JSON Data Export: The fully processed graph exported to JSON (output/cluster-
 graph-export.json).
-Algorithm Implementations: Custom BFS, DFS, and Dijkstra's implementations.
+Algorithm Implementations: Custom BFS, DFS, A* Search, and Flow Network
+implementations.
 Bonus 1: Interactive HTML/JS Visualizer (output/index.html).
 Bonus 2: Live CVE Scoring via the NIST NVD API.
+Bonus 3: Temporal Analysis & Predictive AI (Graph diffing and KANs).
 Bonus Feature: AI-powered executive summaries via Google Gemini.
 ```
 ## ⚙ Setup Instructions
@@ -38,8 +40,8 @@ pip install -r requirements.txt
 ```
 export GEMINI_API_KEY="your-api-key-here"
 ```
-5. **Run the Application:**
 
+5. **Run the Application:**
 
 ```
 python main.py
@@ -76,16 +78,25 @@ Score. A lower weight indicates a path of lesser resistance for an attacker.
 ```
 ## 🧠 Algorithms Used
 
-1. **Blast Radius Detection (Breadth-First Search):** Generates an ego_graph extending 3
-    hops outward from a compromised pod to define the incident response Danger Zone.
-2. **Attack Path Detection (Dijkstra's Algorithm):** Calculates the shortest path from public
-    external nodes to internal db Crown Jewels, utilizing edge weights to find the path of
-    least resistance.
+1. **Blast Radius Detection (BFS & Markov Chains):** Generates an ego_graph extending 3
+    hops outward from a compromised pod to define the incident response Danger Zone, while
+    using Eigenvector Centrality to model the statistical probability of lateral movement.
+2. **Attack Path Detection (Dijkstra's & A Search):** Calculates the shortest path from public
+    external nodes to internal db Crown Jewels. Uses CVSS edge weights and a "privilege
+    proximity" heuristic to efficiently find the path of least resistance.
+
+
 3. **Circular Permission Detection (Depth-First Search):** Utilizes a custom recursive DFS
     algorithm tracking visited sets and a rec_stack to mathematically prove the existence
     of back-edges (privilege escalation loops).
-4. **Critical Node Simulation:** Iteratively drops nodes that exist on valid attack paths,
-    recounting the total available paths to identify the single "choke point" remediation target.
+4. **Critical Node Identification (Min-Cut / Max-Flow Theorem):** Models the cluster as a
+    flow network to instantly pinpoint the exact topological bottleneck, identifying the single
+    "choke point" remediation target without relying on brute-force graph recalculation.
+5. **Bonus 3 — Temporal Analysis & Predictive AI (KANs):** Stores graph snapshots over time
+    and diffs consecutive scans to alert on new attack paths. By feeding these temporal diffs
+    into highly interpretable Kolmogorov-Arnold Networks (KANs), the tool can proactively
+    predict whether an incoming node (e.g., a new deployment) is safe or if it will bridge a new
+    critical attack chain.
 
 ## Screenshots
 <img width="1468" height="831" alt="image" src="https://github.com/user-attachments/assets/c0b6ee8a-1808-4647-96cf-3eb0d5f3a255" />
