@@ -40,19 +40,27 @@ def main():
             ai_summary=ai_summary
         )
         
-        # --- NEW: Generate PDF Kill Chain Report ---
+        # --- Generate PDF Kill Chain Report ---
         pdf_path = PDFReport.generate(
             G=engine.G, source=source_node, target=target_node,
             path=path, path_risk=path_risk, blast_radius=blast_radius,
             cycles=cycles, critical_node=critical_node, reduction=reduction
         )
         
-        # --- NEW: Export JSON Data ---
+        # --- Export JSON Data ---
         json_path = engine.export_to_json("output/cluster-graph-export.json")
         
+        # --- Generate Advanced Interactive Dashboard ---
         html_path = GraphVisualizer.generate_html(
-            G=engine.G, critical_path=path, blast_radius=blast_radius, 
-            critical_node=critical_node, reduction=reduction
+            G=engine.G,
+            critical_path=path,
+            blast_radius=blast_radius,
+            critical_node=critical_node,
+            reduction=reduction,
+            cycles=cycles,
+            path_risk=path_risk,
+            source_node=source_node,
+            target_node=target_node,
         )
         
         print("\n[✔] DELIVERABLES GENERATED:")
